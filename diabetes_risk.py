@@ -19,11 +19,7 @@ import pymysql
 pymysql.__version__
 '0.9.3'
 
-# Mysql Server connection
-mysql_conn = pymysql.connect(host='35.230.132.104',
-database='low_carb_program_v2',
-user='krishP',
-password='s4lv4d0r',)
+
 
 # Data
 users = pd.read_sql_query('''SELECT* FROM td_user''', mysql_conn)
@@ -85,7 +81,6 @@ def stones_pounds(data):
     df['new_weights'] = (df['new_weights']*6.4).round()
     df = df.drop(columns=['level_0','index'])
     return df
-df = stones_pounds(data)
 
 # filling nans with converted weights 
 data['weight_kg'] = data.weight_kg.fillna(df.new_weights)
@@ -97,7 +92,6 @@ def preprocess_height(data):
     data['height'] = data['height'].str.split('/').str[1]
     data['height'] = data['height'].str.replace(r'm','')
     return data
-data = preprocess_height(data)
 
 def preprocess_waist(data):
 
@@ -105,7 +99,6 @@ def preprocess_waist(data):
     data['waist'] = data['waist'].str.replace(r'cm','')
     return data
 
-data = preprocess_waist(data)
 data = data.dropna()
 
 
@@ -116,9 +109,7 @@ def cal_age(data):
     data['age'] = 2019 - data['age']
 
     return data
-data = cal_age(data) # we can remove outliers from the age
 
-final_df = data
 def encoder(final_df):
 
     final_features = final_df.drop(columns=[
@@ -131,8 +122,7 @@ def encoder(final_df):
     final_df = pd.concat([final_features,df],axis=1)
 
     return final_df
-encoded_df = encoder(final_df)
-# encoded_df['daily carbs'] = scaler.fit_transform(encoded_df['daily carbs'])
+
 
 def scale(encoded_df):
     # feature mattrix
@@ -141,16 +131,10 @@ def scale(encoded_df):
     x = pd.DataFrame(scaler.fit_transform(x))
 
     return x
-x = scale(encoded_df)
 
 # correlation mattrix
 corr = x.corr()
 corr.style.background_gradient(cmap='coolwarm').set_precision(4)
-
-
-# df with column names
-corr_df = encoded_df.corr()
-corr_df.style.background_gradient(cmap='coolwarm').set_precision(4)
 
 # label
 y = encoded_df[['diabetes_type']]
@@ -159,15 +143,13 @@ y = encoded_df[['diabetes_type']]
 Labels = final_df['diabetes_type'].values
 ids = encoded_df['diabetes_type'].values
 idx2intent = {i:j for i, j in zip(ids, Labels)}
-idx2intent[0]#2, 5, 6, 7
-# ignoring healthcare, mody, getational diabetes
+idx2intent[0]
+
 
 x = x.reset_index()
 y = y.reset_index()
 features = pd.concat([x,y],axis=1)
 no_diab = features[features['diabetes_type']==3]
-no_diab_dist = no_diab[[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]]
-no_diab_y = no_diab[['diabetes_type']]
 prediab = features[features['diabetes_type']==6]
 type1 = features[features['diabetes_type']==7]
 type2 = features[features['diabetes_type']==8]
@@ -257,20 +239,10 @@ model = clf.fit(x_train, y_train)
 y_pred = model.predict(x_test)
 accuracy_score(y_test,y_pred)*100
 confusion_matrix(y_test,y_pred)
-# recall_score(y_test, y_pred,pos_label='positive',average='micro')
+
 f1_score(y_test, y_pred, average='macro')
+
 mean_squared_error(y_test, y_pred)
-
-y_true = y_test
-y_pred = y_pred
-cnf_matrix = confusion_matrix(y_test,y_pred)
-np.set_printoptions(precision=2)
-
-# Plot non-normalized confusion matrix
-plt.figure()
-plt.show()
-plot_confusion_matrix(cnf_matrix, classes=['no_diab', 'prediab', 'type1','type2'],
-                      title='Confusion matrix, without normalization')
 
 
 
